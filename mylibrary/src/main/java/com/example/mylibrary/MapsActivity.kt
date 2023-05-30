@@ -1,62 +1,106 @@
 package com.example.mylibrary
 
-import androidx.appcompat.app.AppCompatActivity
+import android.Manifest
+import android.content.pm.PackageManager
+import android.location.Location
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
+import android.widget.Button
+import androidx.activity.result.ActivityResultCallback
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
+import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.MarkerOptions
-import com.example.mylibrary.databinding.ActivityMapsBinding
-import com.unity3d.player.UnityPlayer
+import com.google.android.gms.tasks.OnSuccessListener
+import com.google.android.gms.tasks.Task
+
 
 public interface AsynkTaskInterface {
     public fun setMarker(lat: Double, lon: Double, title: String);
 }
 
-class MapsActivity : AppCompatActivity(), OnMapReadyCallback, AsynkTaskInterface {
+public class MapsActivity : AppCompatActivity(), OnMapReadyCallback, AsynkTaskInterface {
 
     private lateinit var mMap: GoogleMap
-    private lateinit var binding: ActivityMapsBinding
+    private lateinit var fusedLocationClient: FusedLocationProviderClient
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        binding = ActivityMapsBinding.inflate(layoutInflater)
-        setContentView(binding.root)
+        setContentView(R.layout.activity_maps)
 
-        // Obtain the SupportMapFragment and get notified when the map is ready to be used.
-        val mapFragment = supportFragmentManager
+        fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
+
+        val button: Button = findViewById<Button>(R.id.my_button)
+        button.setOnClickListener { finish() }
+
+
+        val mapFragment = getSupportFragmentManager()
             .findFragmentById(R.id.map) as SupportMapFragment
         mapFragment.getMapAsync(this)
+
     }
 
-    override fun onStart() {
-        super.onStart()
+    private val requestPermissionLauncher: ActivityResultLauncher<String> =
+        registerForActivityResult<String, Boolean>(
+            ActivityResultContracts.RequestPermission(),
+            ActivityResultCallback<Boolean> { isGranted: Boolean ->
+                if (isGranted) {
+                    fusedLocation()
+                }
+            })
 
-        Handler(Looper.getMainLooper()).postDelayed({
-            UnityPlayer.UnitySendMessage("GetWayspots", "RequestAreas", "from ios")
-        }, 1500)
+    private fun fusedLocation() {
+        if (ActivityCompat.checkSelfPermission(
+                this, Manifest.permission.ACCESS_FINE_LOCATION
+            )
+            != PackageManager.PERMISSION_GRANTED
+        ) {
+            return
+        }
+
+        mMap.isMyLocationEnabled = true
+
+        val locationResult: Task<Location> = fusedLocationClient.getLastLocation()
+        locationResult.addOnSuccessListener(this,
+            OnSuccessListener<Location?> { location -> // Got last known location. In some rare situations this can be null.
+                if (location != null) {
+                    val currentLocation = LatLng(location.latitude, location.longitude)
+                    mMap.addMarker(
+                        MarkerOptions().position(currentLocation)
+                            .title("Marker in current location")
+                    )
+                    mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(currentLocation, 16f))
+                }
+            })
     }
 
+        override fun onMapReady(p0: GoogleMap): Unit {
+            mMap = p0
 
-    override fun onMapReady(googleMap: GoogleMap) {
-        mMap = googleMap
+            if (ActivityCompat.checkSelfPermission(
+                    this,
+                    Manifest.permission.ACCESS_FINE_LOCATION
+                ) != PackageManager.PERMISSION_GRANTED
+            ) {
+                requestPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+            } else {
+                fusedLocation()
+            }
+        }
 
-        // Add a marker in Sydney and move the camera
+
+    override fun setMarker(lat: Double, lon: Double, title: String) {
+        TODO("Not yet implemented")
         val sydney = LatLng(-34.0, 151.0)
         mMap.addMarker(MarkerOptions().position(sydney).title("Marker in Sydney"))
         mMap.moveCamera(CameraUpdateFactory.newLatLng(sydney))
-    }
-
-    public override fun setMarker(lat: Double, lon: Double, title: String) {
-        val markerOptions = MarkerOptions()
-        val latlng = LatLng(lat, lon)
-        markerOptions.position(latlng)
-        markerOptions.title(title)
-        mMap.addMarker(markerOptions)
     }
 }
