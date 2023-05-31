@@ -106,16 +106,12 @@ public class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
                 val geoJson = intent.getStringExtra("geo")
 
                 geoJson?.let {
-                    val mapInfo  = Json.decodeFromString<Root>(geoJson)
+                    val mapInfo  = Json.decodeFromString<AreaList>(geoJson)
                     mapInfo.features.forEach {
-                        val geometry = it.geometry.coordinates.forEach {
-                            it.forEach {
-                                val position = LatLng(it[1], it[0])
+                                val position = LatLng(it.lat, it.lon)
                                 mMap.addMarker(MarkerOptions().position(position).icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE)).title(""))
                             }
                         }
-                    }
-                }
             }
         }
 }
