@@ -1,6 +1,7 @@
 package com.example.mylibrary
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.location.Location
 import android.os.Bundle
@@ -16,17 +17,19 @@ import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
+import com.google.android.gms.maps.model.BitmapDescriptor
+import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.MarkerOptions
 import com.google.android.gms.tasks.OnSuccessListener
 import com.google.android.gms.tasks.Task
+import com.unity3d.player.UnityPlayer
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.json.Json
 
 
-public interface AsynkTaskInterface {
-    public fun setMarker(lat: Double, lon: Double, title: String);
-}
 
-public class MapsActivity : AppCompatActivity(), OnMapReadyCallback, AsynkTaskInterface {
+public class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
 
     private lateinit var mMap: GoogleMap
     private lateinit var fusedLocationClient: FusedLocationProviderClient
@@ -35,6 +38,8 @@ public class MapsActivity : AppCompatActivity(), OnMapReadyCallback, AsynkTaskIn
         super.onCreate(savedInstanceState)
 
         setContentView(R.layout.activity_maps)
+
+        supportActionBar?.hide()
 
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
 
@@ -45,6 +50,7 @@ public class MapsActivity : AppCompatActivity(), OnMapReadyCallback, AsynkTaskIn
         val mapFragment = getSupportFragmentManager()
             .findFragmentById(R.id.map) as SupportMapFragment
         mapFragment.getMapAsync(this)
+
 
     }
 
@@ -58,6 +64,7 @@ public class MapsActivity : AppCompatActivity(), OnMapReadyCallback, AsynkTaskIn
             })
 
     private fun fusedLocation() {
+        UnityPlayer.UnitySendMessage("GetWaysports","RequestAreas","")
         if (ActivityCompat.checkSelfPermission(
                 this, Manifest.permission.ACCESS_FINE_LOCATION
             )
@@ -77,7 +84,7 @@ public class MapsActivity : AppCompatActivity(), OnMapReadyCallback, AsynkTaskIn
                         MarkerOptions().position(currentLocation)
                             .title("Marker in current location")
                     )
-                    mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(currentLocation, 16f))
+                    mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(currentLocation, 14f))
                 }
             })
     }
@@ -93,14 +100,22 @@ public class MapsActivity : AppCompatActivity(), OnMapReadyCallback, AsynkTaskIn
                 requestPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
             } else {
                 fusedLocation()
+
+
+                val intent = getIntent()
+                val geoJson = intent.getStringExtra("geo")
+
+                geoJson?.let {
+                    val mapInfo  = Json.decodeFromString<Root>(geoJson)
+                    mapInfo.features.forEach {
+                        val geometry = it.geometry.coordinates.forEach {
+                            it.forEach {
+                                val position = LatLng(it[1], it[0])
+                                mMap.addMarker(MarkerOptions().position(position).icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE)).title(""))
+                            }
+                        }
+                    }
+                }
             }
         }
-
-
-    override fun setMarker(lat: Double, lon: Double, title: String) {
-        TODO("Not yet implemented")
-        val sydney = LatLng(-34.0, 151.0)
-        mMap.addMarker(MarkerOptions().position(sydney).title("Marker in Sydney"))
-        mMap.moveCamera(CameraUpdateFactory.newLatLng(sydney))
-    }
 }

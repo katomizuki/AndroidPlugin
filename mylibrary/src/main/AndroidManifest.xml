@@ -8,7 +8,9 @@
             android:name="com.google.android.geo.API_KEY"
             android:value="AIzaSyCRJW06aF80tfK5YGpe1Cp7dJcJZNAiz18" />
 
+
         <activity
+            android:theme="@style/Theme.AppCompat.Light.DarkActionBar"
             android:name="com.example.mylibrary.MapsActivity"
             android:exported="false"
             android:label="@string/title_activity_maps" />
