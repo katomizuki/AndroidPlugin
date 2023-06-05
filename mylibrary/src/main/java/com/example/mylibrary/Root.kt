@@ -8,5 +8,6 @@ data class AreaList(
 @Serializable
 data class LanLon(
     val lat: Double,
-    val lon: Double
+    val lon: Double,
+    val title: String
 )

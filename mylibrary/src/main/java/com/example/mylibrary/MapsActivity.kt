@@ -109,7 +109,7 @@ public class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
                     val mapInfo  = Json.decodeFromString<AreaList>(geoJson)
                     mapInfo.features.forEach {
                                 val position = LatLng(it.lat, it.lon)
-                                mMap.addMarker(MarkerOptions().position(position).icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE)).title(""))
+                                mMap.addMarker(MarkerOptions().position(position).icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE)).title(it.title))
                             }
                         }
             }
